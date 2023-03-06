@@ -11,8 +11,11 @@ import com.google.gson.Gson;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class NoteAPI {
     // TODO: Implement the API using OkHttp!
@@ -25,6 +28,10 @@ public class NoteAPI {
 
     private OkHttpClient client;
 
+    // MediaType specification for putNote
+    public static final MediaType JSON
+            = MediaType.get("application/json; charset=utf-8");
+
     public NoteAPI() {
         this.client = new OkHttpClient();
     }
@@ -34,6 +41,55 @@ public class NoteAPI {
             instance = new NoteAPI();
         }
         return instance;
+    }
+
+    /**
+     * My implementation of getNote.
+     * Named getNoteAsync since we are handling one side: get note from the server side
+     */
+    @WorkerThread
+    public String getNoteAsync(String title) {
+        // Replace spaces with %20 so that the URL is valid
+        String encodedTitle = title.replace(" ", "%20");;
+
+        var request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + encodedTitle)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            assert response.body() != null;
+            var body = response.body().string();
+            Log.i("NOTE CONTENT", body);
+            return body;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * My implementation of putNote.
+     */
+    @WorkerThread
+    public String putNote(Note note) {
+        // Replace spaces with %20 so that the URL is valid
+        String encodedTitle = note.title.replace(" ", "%20");;
+
+        var requestBody = RequestBody.create(note.toJSON(), JSON);
+        var request = new Request.Builder()
+                .url("https://sharednotes.goto.ucsd.edu/notes/" + encodedTitle)
+                .post(requestBody)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            assert response.body() != null;
+            var body = response.body().string();
+            Log.i("NOTE CONTENT", body);
+            return body;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
