@@ -2,18 +2,29 @@ package edu.ucsd.cse110.sharednotes.model;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class NoteRepository {
     private final NoteDao dao;
-    private ScheduledFuture<?> poller; // what could this be for... hmm?
+    // LiveData variable which contains the latest real note value.
+    private final MutableLiveData<Note> realNoteData;
+
+    private final NoteAPI noteAPI;
+    // ScheduledFuture result of scheduling a task with a ScheduledExecutorService
+    private ScheduledFuture<?> poller;
 
     public NoteRepository(NoteDao dao) {
+        // Set up the real note value.
+        realNoteData = new MutableLiveData<>();
+        noteAPI = new NoteAPI();
         this.dao = dao;
     }
 
@@ -99,16 +110,29 @@ public class NoteRepository {
         }
 
         // Set up a background thread that will poll the server every 3 seconds.
+        var executor = Executors.newSingleThreadScheduledExecutor();
+        poller = executor.scheduleAtFixedRate(() -> {
+            realNoteData.postValue(getLocal(title).getValue());
+        }, 0, 3000, TimeUnit.MILLISECONDS);
+
+        return this.realNoteData;
 
         // You may (but don't have to) want to cache the LiveData's for each title, so that
         // you don't create a new polling thread every time you call getRemote with the same title.
         // You don't need to worry about killing background threads.
 
-        throw new UnsupportedOperationException("Not implemented yet");
+        //throw new UnsupportedOperationException("Not implemented yet");
     }
 
     public void upsertRemote(Note note) {
         // TODO: Implement upsertRemote!
-        throw new UnsupportedOperationException("Not implemented yet");
+        if(noteAPI.getNoteAsync(note.title) == null) {
+            // insert note if it doesn't exist
+            noteAPI.putNote(note);
+        } else {
+            // update note if it does exist
+
+        }
+        //throw new UnsupportedOperationException("Not implemented yet");
     }
 }
