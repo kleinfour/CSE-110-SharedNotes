@@ -57,7 +57,7 @@ public class NoteAPI {
                 .url("https://sharednotes.goto.ucsd.edu/notes/" + encodedTitle)
                 .build();
 
-        try (Response response = client.newCall(request).execute()) {
+        try (var response = client.newCall(request).execute()) {
             assert response.body() != null;
             var body = response.body().string();
             Log.i("GETNOTE", body);
@@ -72,24 +72,24 @@ public class NoteAPI {
      * My implementation of putNote.
      */
     @WorkerThread
-    public String putNote(Note note) {
+    public void putNote(Note note) {
         // Replace spaces with %20 so that the URL is valid
         String encodedTitle = note.title.replace(" ", "%20");
 
         var requestBody = RequestBody.create(note.toJSON(), JSON);
         var request = new Request.Builder()
                 .url("https://sharednotes.goto.ucsd.edu/notes/" + encodedTitle)
-                .post(requestBody)
+                .put(requestBody)
                 .build();
 
         try (var response = client.newCall(request).execute()) {
             assert response.body() != null;
             var body = response.body().string();
             Log.i("PUTNOTE", body);
-            return body;
+            //return body;
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            //return null;
         }
     }
 
