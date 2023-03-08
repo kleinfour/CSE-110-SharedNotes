@@ -8,6 +8,7 @@ import androidx.annotation.WorkerThread;
 
 import com.google.gson.Gson;
 
+import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
@@ -58,9 +59,9 @@ public class NoteAPI {
 
         try (Response response = client.newCall(request).execute()) {
             assert response.body() != null;
-            var body = response.body().string();
-            Log.i("NOTE CONTENT", body);
-            return body;
+            var body = response.body();
+            Log.i("GETNOTE", body.string());
+            return body.string();
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -71,24 +72,21 @@ public class NoteAPI {
      * My implementation of putNote.
      */
     @WorkerThread
-    public String putNote(Note note) {
+    public void putNote(Note note) {
         // Replace spaces with %20 so that the URL is valid
         String encodedTitle = note.title.replace(" ", "%20");;
 
-        var requestBody = RequestBody.create(note.toJSON(), JSON);
+        var requestBody = RequestBody.create(JSON, note.toJSON());
         var request = new Request.Builder()
                 .url("https://sharednotes.goto.ucsd.edu/notes/" + encodedTitle)
                 .post(requestBody)
                 .build();
 
-        try (Response response = client.newCall(request).execute()) {
-            assert response.body() != null;
-            var body = response.body().string();
-            Log.i("NOTE CONTENT", body);
-            return body;
+        try (var response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+            Log.i("PUTNOTE", response.body().string());
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
         }
     }
 

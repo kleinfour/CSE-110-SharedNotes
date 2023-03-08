@@ -14,17 +14,12 @@ import java.util.concurrent.TimeUnit;
 
 public class NoteRepository {
     private final NoteDao dao;
-    // LiveData variable which contains the latest real note value.
-    private final MutableLiveData<Note> realNoteData;
-
-    private final NoteAPI noteAPI;
+    private final NoteAPI api;
     // ScheduledFuture result of scheduling a task with a ScheduledExecutorService
     private ScheduledFuture<?> poller;
 
     public NoteRepository(NoteDao dao) {
-        // Set up the real note value.
-        realNoteData = new MutableLiveData<>();
-        noteAPI = new NoteAPI();
+        api = NoteAPI.provide(); // provide the api to poll from server
         this.dao = dao;
     }
 
@@ -108,14 +103,14 @@ public class NoteRepository {
         if (this.poller != null && !this.poller.isCancelled()) {
             poller.cancel(true);
         }
-
+        var note = new MutableLiveData<Note>();
         // Set up a background thread that will poll the server every 3 seconds.
         var executor = Executors.newSingleThreadScheduledExecutor();
         poller = executor.scheduleAtFixedRate(() -> {
-            realNoteData.postValue(getLocal(title).getValue());
+            note.postValue(Note.fromJSON(api.getNoteAsync(title)));
         }, 0, 3000, TimeUnit.MILLISECONDS);
 
-        return this.realNoteData;
+        return note;
 
         // You may (but don't have to) want to cache the LiveData's for each title, so that
         // you don't create a new polling thread every time you call getRemote with the same title.
@@ -125,14 +120,7 @@ public class NoteRepository {
     }
 
     public void upsertRemote(Note note) {
-        // TODO: Implement upsertRemote!
-        if(noteAPI.getNoteAsync(note.title) == null) {
-            // insert note if it doesn't exist
-            noteAPI.putNote(note);
-        } else {
-            // update note if it does exist
-
-        }
+        api.putNote(note);
         //throw new UnsupportedOperationException("Not implemented yet");
     }
 }
