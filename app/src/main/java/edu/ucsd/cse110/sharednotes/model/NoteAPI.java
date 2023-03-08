@@ -51,7 +51,7 @@ public class NoteAPI {
     @WorkerThread
     public String getNoteAsync(String title) {
         // Replace spaces with %20 so that the URL is valid
-        String encodedTitle = title.replace(" ", "%20");;
+        String encodedTitle = title.replace(" ", "%20");
 
         var request = new Request.Builder()
                 .url("https://sharednotes.goto.ucsd.edu/notes/" + encodedTitle)
@@ -59,9 +59,9 @@ public class NoteAPI {
 
         try (Response response = client.newCall(request).execute()) {
             assert response.body() != null;
-            var body = response.body();
-            Log.i("GETNOTE", body.string());
-            return body.string();
+            var body = response.body().string();
+            Log.i("GETNOTE", body);
+            return body;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -72,21 +72,24 @@ public class NoteAPI {
      * My implementation of putNote.
      */
     @WorkerThread
-    public void putNote(Note note) {
+    public String putNote(Note note) {
         // Replace spaces with %20 so that the URL is valid
-        String encodedTitle = note.title.replace(" ", "%20");;
+        String encodedTitle = note.title.replace(" ", "%20");
 
-        var requestBody = RequestBody.create(JSON, note.toJSON());
+        var requestBody = RequestBody.create(note.toJSON(), JSON);
         var request = new Request.Builder()
                 .url("https://sharednotes.goto.ucsd.edu/notes/" + encodedTitle)
                 .post(requestBody)
                 .build();
 
         try (var response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-            Log.i("PUTNOTE", response.body().string());
+            assert response.body() != null;
+            var body = response.body().string();
+            Log.i("PUTNOTE", body);
+            return body;
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
     }
 

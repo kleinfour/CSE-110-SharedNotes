@@ -120,7 +120,7 @@ public class NoteRepository {
     }
 
     public void upsertRemote(Note note) {
+        poller.cancel(true);
         api.putNote(note);
-        //throw new UnsupportedOperationException("Not implemented yet");
     }
 }
